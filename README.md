@@ -1,6 +1,6 @@
 # CocoaToggleSwitch
 
-![screenshot](example_screenshot.png)  
+![screenshot](https://raw.githubusercontent.com/oodrive/CocoaToggleSwitch/master/example_screenshot.png)  
 
 Native OnOffSwitch control wrapped for use in Xamarin.Mac apps.  
 Based off https://bitbucket.org/dainkaplan/cocoa-on-off-switch-control .  
