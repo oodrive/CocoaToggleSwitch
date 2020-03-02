@@ -1,0 +1,6 @@
+framework module OnOffSwitch {
+  umbrella header "OnOffSwitch.h"
+
+  export *
+  module * { export * }
+}
