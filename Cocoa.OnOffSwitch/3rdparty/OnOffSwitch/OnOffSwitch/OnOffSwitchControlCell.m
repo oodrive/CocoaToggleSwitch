@@ -8,6 +8,8 @@
 //  Extended by Dain Kaplan on 2012-01-31.
 //  Copyright 2012 Dain Kaplan. All rights reserved.
 //
+//  Modernized by Oodrive,
+//  Copyright 2020 Oodrive. All rights reserved.
 
 #import "OnOffSwitchControlCell.h"
 
@@ -100,9 +102,9 @@ NSRect DKCenterRect(NSRect smallRect, NSRect bigRect)
 	}
 	// NOTE(dk): start additions 
 	self.showsOnOffLabels = YES;
-	self.onOffSwitchControlColors = OnOffSwitchControlBlueGreyColors;
-	self.onSwitchLabel = @"ON";
-	self.offSwitchLabel = @"OFF";
+	self.onOffSwitchControlColors = OnOffSwitchControlDefaultColors;
+	self.onSwitchLabel = @"I";
+	self.offSwitchLabel = @"O";
 	// NOTE(dk): end additions
 }
 
@@ -135,16 +137,16 @@ NSRect DKCenterRect(NSRect smallRect, NSRect bigRect)
 	NSRect thumbFrame = cellFrame;
 	thumbFrame.size.width = thumbFrame.size.height;
 
-	NSCellStateValue state = [self state];
+    NSControlStateValue state = [self state];
 	switch (state) {
-		case NSOffState:
+        case NSControlStateValueOff:
 			//Far left. We're already there; don't do anything.
 			break;
-		case NSOnState:
+        case NSControlStateValueOn:
 			//Far right.
 			thumbFrame.origin.x += (cellFrame.size.width - thumbFrame.size.width);
 			break;
-		case NSMixedState:
+        case NSControlStateValueMixed:
 			//Middle.
 			thumbFrame.origin.x = (cellFrame.size.width / 2.0f) - (thumbFrame.size.width / 2.0f);
 			break;
@@ -212,24 +214,19 @@ NSRect DKCenterRect(NSRect smallRect, NSRect bigRect)
 	NSColor *onEndColor;
 	NSColor *offStartColor;
 	NSColor *offEndColor;
-
-	NSColor *_blueColor = [NSColor colorWithCalibratedRed:0.184f green:0.396f blue:0.984f alpha:0.70f];
-	NSColor *_greyColor = [NSColor colorWithCalibratedRed:1.0 green:0.0 blue:0.0 alpha:0.0f];
-	NSColor *_greenColor = [NSColor colorWithCalibratedRed:0.0 green:0.7 blue:0.0 alpha:0.6f];
-	NSColor *_redColor = [NSColor colorWithCalibratedRed:0.7 green:0.0 blue:0.0 alpha:0.6f];
 		
 	switch (self.onOffSwitchControlColors) {
 		case OnOffSwitchControlBlueGreyColors:
-			onStartColor = onEndColor = _blueColor;
-			offStartColor = offEndColor = _greyColor;
+			onStartColor = onEndColor = NSColor.systemBlueColor;
+			offStartColor = offEndColor = NSColor.systemGrayColor;
 			break;
 		case OnOffSwitchControlGreenRedColors:
-			onStartColor = onEndColor = _greenColor;
-			offStartColor = offEndColor = _redColor;
+			onStartColor = onEndColor = NSColor.systemGreenColor;
+			offStartColor = offEndColor = NSColor.systemRedColor;
 			break;
 		case OnOffSwitchControlBlueRedColors:
-			onStartColor = onEndColor = _blueColor;
-			offStartColor = offEndColor = _redColor;
+			onStartColor = onEndColor = NSColor.systemBlueColor;
+			offStartColor = offEndColor = NSColor.systemRedColor;
 			break;
 		case OnOffSwitchControlCustomColors:
 			onStartColor = onEndColor = self.customOnColor;
@@ -237,8 +234,8 @@ NSRect DKCenterRect(NSRect smallRect, NSRect bigRect)
 			break;
 		case OnOffSwitchControlDefaultColors:
 		default:
-			onStartColor = onEndColor = nil;
-			offStartColor = offEndColor = nil;
+			onStartColor = onEndColor = NSColor.controlAccentColor;
+			offStartColor = offEndColor = NSColor.systemGrayColor;
 	}
 	
 	if (onStartColor != nil && offStartColor != nil) {
@@ -276,7 +273,7 @@ NSRect DKCenterRect(NSRect smallRect, NSRect bigRect)
 		trackingCellFrame = cellFrame;
 
 	NSGraphicsContext *context = [NSGraphicsContext currentContext];
-	CGContextRef quartzContext = [context graphicsPort];
+    CGContextRef quartzContext = [context CGContext];
 	CGContextBeginTransparencyLayer(quartzContext, /*auxInfo*/ NULL);
 
 	//Draw the background, then the frame.
@@ -298,7 +295,7 @@ NSRect DKCenterRect(NSRect smallRect, NSRect bigRect)
     
     NSBezierPath *borderPath = [NSBezierPath bezierPathWithRoundedRect:NSInsetRect(cellFrame, 0.5f, 0.5f) xRadius:FRAME_CORNER_RADIUS yRadius:FRAME_CORNER_RADIUS];
 
-    [[NSColor colorWithCalibratedWhite:BORDER_WHITE alpha:0.16f] setStroke];
+    [NSColor.separatorColor setStroke];
     [borderPath stroke];
     
 	[context restoreGraphicsState];
@@ -306,14 +303,13 @@ NSRect DKCenterRect(NSRect smallRect, NSRect bigRect)
 	[self drawInteriorWithFrame:cellFrame inView:controlView];
 
 	if (![self isEnabled]) {
-		CGColorRef color = CGColorCreateGenericGray(DISABLED_OVERLAY_GRAY, DISABLED_OVERLAY_ALPHA);
-		if (color) {
-			CGContextSetBlendMode(quartzContext, kCGBlendModeLighten);
-			CGContextSetFillColorWithColor(quartzContext, color);
-			CGContextFillRect(quartzContext, NSRectToCGRect(cellFrame));
+        
+        // Paint a half-transparent overlay over the button
+        [[NSColor.windowBackgroundColor colorWithAlphaComponent:0.5f] setFill];
+        [[NSColor.windowBackgroundColor colorWithAlphaComponent:0.5f] setStroke];
+        [borderPath stroke];
+        [borderPath fill];
 
-			CFRelease(color);
-		}
 	}
 	CGContextEndTransparencyLayer(quartzContext);
 }
@@ -347,15 +343,16 @@ NSRect DKCenterRect(NSRect smallRect, NSRect bigRect)
 
 	NSBezierPath *thumbPath = [NSBezierPath bezierPathWithRoundedRect:thumbFrame xRadius:thumbFrame.size.height/2 yRadius:thumbFrame.size.height/2];
 
-	[[NSColor whiteColor] setFill];
+	[NSColor.windowBackgroundColor setFill];
 	if ([self showsFirstResponder] && ([self focusRingType] != NSFocusRingTypeNone))
 		NSSetFocusRingStyle(NSFocusRingBelow);
 	[thumbPath fill];
-	NSGradient *thumbGradient = [[[NSGradient alloc] initWithStartingColor:[NSColor colorWithCalibratedWhite:THUMB_GRADIENT_MAX_Y_WHITE alpha:1.0f] endingColor:[NSColor colorWithCalibratedWhite:THUMB_GRADIENT_MIN_Y_WHITE alpha:1.0f]] autorelease];
+    
+    NSGradient *thumbGradient = [[[NSGradient alloc] initWithStartingColor:NSColor.controlColor endingColor:[NSColor.controlColor colorWithAlphaComponent:0.2f]] autorelease];
 	[thumbGradient drawInBezierPath:thumbPath angle:DOWNWARD_ANGLE_IN_DEGREES_FOR_VIEW(controlView)];
 
     thumbPath = [NSBezierPath bezierPathWithRoundedRect:NSInsetRect(thumbFrame, -0.5, -0.5) xRadius:THUMB_CORNER_RADIUS yRadius:THUMB_CORNER_RADIUS];
-    [[NSColor colorWithCalibratedWhite:0.5 alpha:1.0] setStroke];
+    [NSColor.separatorColor setStroke];
     [thumbPath stroke];
     
     
@@ -419,36 +416,36 @@ NSRect DKCenterRect(NSRect smallRect, NSRect bigRect)
 		BOOL isClickNotDrag = isClickNotDragByTime && isClickNotDragBySpaceX && isClickNotDragBySpaceY;
 
 		if (!isClickNotDrag) {
-			NSCellStateValue desiredState;
+            NSControlStateValue desiredState;
 
 			if ([self allowsMixedState]) {
 				if (xFraction < ONE_THIRD)
-					desiredState = NSOffState;
+                    desiredState = NSControlStateValueOff;
 				else if (xFraction >= TWO_THIRDS)
-					desiredState = NSOnState;
+                    desiredState = NSControlStateValueOn;
 				else
-					desiredState = NSMixedState;
+                    desiredState = NSControlStateValueMixed;
 			} else {
 				if (xFraction < ONE_HALF)
-					desiredState = NSOffState;
+                    desiredState = NSControlStateValueOff;
 				else
-					desiredState = NSOnState;
+                    desiredState = NSControlStateValueOn;
 			}
 
 			//We actually need to set the state to the one *before* the one we want, because NSCell will advance it. I'm not sure how to thwart that without breaking -setNextState, which breaks AXPress and the space bar.
-			NSCellStateValue stateBeforeDesiredState = NSOffState;
+            NSControlStateValue stateBeforeDesiredState = NSControlStateValueOff;
 			switch (desiredState) {
-				case NSOnState:
+                case NSControlStateValueOn:
 					if ([self allowsMixedState]) {
-						stateBeforeDesiredState = NSMixedState;
+                        stateBeforeDesiredState = NSControlStateValueMixed;
 						break;
 					}
 					//Fall through.
-				case NSMixedState:
-					stateBeforeDesiredState = NSOffState;
+                case NSControlStateValueMixed:
+                    stateBeforeDesiredState = NSControlStateValueOff;
 					break;
-				case NSOffState:
-					stateBeforeDesiredState = NSOnState;
+                case NSControlStateValueOff:
+                    stateBeforeDesiredState = NSControlStateValueOn;
 					break;
 					
 			}
